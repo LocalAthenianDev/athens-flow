@@ -1,5 +1,7 @@
 # Athens Flow · Ροή
 
+**https://flow.athensapps.gr**
+
 Πώς κυλάει η κίνηση προς και από την Αθήνα. Δύο όψεις πάνω στα ίδια ανοιχτά δεδομένα:
 
 - **Ανάλυση ροών**: χάρτης με όλους τους σταθμούς μέτρησης της Αττικής (621), χρωματισμένους με τη βαθμίδα κίνησης, με βέλος στην πορεία των οχημάτων. Σύγκριση «προς Αθήνα» και «από Αθήνα», άξονες σταθμό προς σταθμό, δημοτικές κοινότητες του Δήμου Αθηναίων, σειρά 24 ωρών και τυπική εβδομάδα.
@@ -85,7 +87,7 @@ MOCK=1 ARCHIVE_BASE=archive-mock npm start  # συνθετικό ιστορικ�
 
 ## Deploy
 
-Node.js app σε Hostinger με auto-deploy από GitHub. Entry `server.js`, start `npm start`.
+Node.js app σε Hostinger με auto-deploy από GitHub (`main` → flow.athensapps.gr). Entry `server.js`. Το Hostinger φορτώνει το entry με `require()`, οπότε ο κώδικας δεν πρέπει να έχει top-level `await`.
 
 ## Περιορισμοί
 
