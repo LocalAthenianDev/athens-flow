@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athens Flow · Ροή</title>
+  <meta name="description" content="Πώς κυλάει η κίνηση προς και από την Αθήνα. Ζωντανή εικόνα από 621 σταθμούς μέτρησης της Περιφέρειας Αττικής, ανά άξονα και δημοτική κοινότητα, και οι καλύτερες ώρες για να ξεκινήσεις.">
+  <meta name="theme-color" content="#1d4f91">
+  <link rel="canonical" href="https://flow.athensapps.gr">
+  <meta property="og:title" content="Athens Flow · Ροή">
+  <meta property="og:description" content="Η κίνηση προς και από την Αθήνα, ζωντανά από τα ανοιχτά δεδομένα της Περιφέρειας Αττικής.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="vendor/commissioner/400.css">
+  <link rel="stylesheet" href="vendor/commissioner/600.css">
+  <link rel="stylesheet" href="vendor/commissioner/700.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <div id="envbar" class="envbar" hidden>Δοκιμαστική έκδοση</div>
+
+  <header class="top">
+    <a class="brand" href="./" aria-label="Athens Flow, αρχική">
+      <span class="sign" aria-hidden="true"><span class="sign-gr">ΡΟΗ</span><span class="sign-en">ATHENS FLOW</span></span>
+    </a>
+    <nav class="views" aria-label="Όψεις">
+      <a href="#roes" data-view="flow" aria-current="page">Ανάλυση ροών</a>
+      <a href="#pote" data-view="when">Πότε να φύγω</a>
+    </nav>
+    <div id="status" class="status" role="status">Φόρτωση δεδομένων…</div>
+  </header>
+
+  <main id="view-flow" class="layout">
+    <section class="mapwrap">
+      <div id="map" aria-label="Χάρτης σταθμών μέτρησης κυκλοφορίας"></div>
+      <div class="mapbar">
+        <div class="seg" role="group" aria-label="Κατεύθυνση" id="dirfilter">
+          <button data-v="all" aria-pressed="true">Όλες</button>
+          <button data-v="in" aria-pressed="false">Προς Αθήνα</button>
+          <button data-v="out" aria-pressed="false">Από Αθήνα</button>
+          <button data-v="cross" aria-pressed="false">Εγκάρσιες</button>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </main>
+
+  <main id="view-when" class="when" hidden></main>
+
+  <section class="about" id="about">
+    <div class="about-grid">
+      <div>
+        <h2>Πώς διαβάζεται</h2>
+        <p>Κάθε βέλος στον χάρτη είναι ένας σταθμός μέτρησης και δείχνει προς τα πού κινούνται τα οχήματα που μετράει. Το χρώμα δείχνει πόσο πιο αργά από το κανονικό κυλάει ο δρόμος εκείνη τη στιγμή.</p>
+        <p>Η <strong>βαθμίδα κίνησης</strong> συγκρίνει κάθε σταθμό με τον εαυτό του. Η ταχύτητα που μετράει τώρα διαιρείται με την ταχύτητα ελεύθερης ροής του ίδιου σημείου. Πάνω από 70% είναι ελεύθερη, 50 έως 70% πυκνή, 30 έως 50% αργή και κάτω από 30% μποτιλιάρισμα. Όσο ένας σταθμός δεν έχει ακόμη αρκετό ιστορικό, η βαθμίδα του βγαίνει από την κατάληψη του δρόμου (όρια 15%, 25% και 40%).</p>
+        <p><strong>Προς Αθήνα</strong> είναι οι σταθμοί που η περιγραφή τους γράφει κατεύθυνση Αθήνα ή κέντρο, και όσοι η πορεία τους απέχει έως 60° από την ευθεία προς το κέντρο. <strong>Από Αθήνα</strong> όσοι απομακρύνονται, και <strong>εγκάρσιες</strong> οι υπόλοιπες ροές.</p>
+      </div>
+      <div>
+        <h2>Τι πρέπει να ξέρεις</h2>
+        <p>Η ροή είναι σε οχήματα ανά ώρα, η ταχύτητα σε χιλιόμετρα ανά ώρα και η κατάληψη είναι το ποσοστό του χρόνου που ένα όχημα βρίσκεται πάνω από τον αισθητήρα. Οι μετρήσεις ανανεώνονται κάθε λίγα λεπτά.</p>
+        <p>Σταθμός χωρίς νέα μέτρηση για 15 λεπτά θεωρείται εκτός λειτουργίας. Στις συνόψεις μετράνε μόνο οι σταθμοί κύριου δρόμου. Ράμπες, λωρίδες στροφής και λεωφορειολωρίδες φαίνονται στον χάρτη αλλά δεν αλλάζουν τους μέσους όρους.</p>
+        <p>Το API δίνει μόνο την τρέχουσα μέτρηση, οπότε το ιστορικό το μαζεύει η ίδια η εφαρμογή από τις 12 Νοεμβρίου 2026. Οι «συνηθισμένες» τιμές και το «Πότε να φύγω» γίνονται πιο αξιόπιστα όσο περνούν οι εβδομάδες.</p>
+      </div>
+      <div>
+        <h2>Δεδομένα και κώδικας</h2>
+        <p>Μετρήσεις από το σύνολο δεδομένων <a href="https://data.gov.gr/data-service/attica-region-traffic-data" target="_blank" rel="noopener">Κυκλοφορία δρόμων στην Αττική</a> της Περιφέρειας Αττικής στο data.gov.gr (CC BY 4.0). Τα όρια των δημοτικών κοινοτήτων είναι του Δήμου Αθηναίων, μέσα από το <a href="https://athenshoods.gr" target="_blank" rel="noopener">athenshoods.gr</a>. Υπόβαθρο χάρτη © συντελεστές OpenStreetMap.</p>
+        <p>Όλο το ιστορικό που μαζεύεται είναι ανοιχτό σε αρχεία CSV στο <a href="https://github.com/LocalAthenianDev/athens-flow/tree/data" target="_blank" rel="noopener">GitHub</a>, μαζί με τον κώδικα (MIT). Προσωπικό project, όχι επίσημη εφαρμογή της Περιφέρειας ή του Δήμου.</p>
+        <p class="sig">Μέρος του <a href="https://athensapps.gr">athensapps.gr</a>, από τον <a href="https://github.com/LocalAthenianDev" target="_blank" rel="noopener">Local Athenian Dev</a></p>
+      </div>
+    </div>
+  </section>
+
+  <div id="tip" class="tip" hidden></div>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js?v=1"></script>
+</body>
+</html>

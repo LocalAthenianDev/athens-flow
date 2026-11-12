@@ -1,0 +1,23 @@
+{
+  "name": "athens-flow",
+  "version": "1.0.0",
+  "description": "Athens Flow · Ροή: η κυκλοφορία προς και από τον Δήμο Αθηναίων, live από τα ανοιχτά δεδομένα της Περιφέρειας Αττικής",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "MOCK=1 ARCHIVE_BASE=archive node server.js",
+    "archive": "node scripts/archive.mjs archive"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Thomas Ntoupis (LocalAthenianDev)",
+  "license": "MIT",
+  "dependencies": {
+    "@fontsource/commissioner": "^5.3.0",
+    "compression": "^1.7.5",
+    "express": "^4.21.2",
+    "leaflet": "^1.9.4"
+  }
+}

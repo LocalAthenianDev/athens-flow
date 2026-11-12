@@ -23,6 +23,7 @@ for (const { station, reading: r } of rows) {
   if (last[r.id] && last[r.id] >= r.t) continue; // ίδια μέτρηση με την προηγούμενη φορά
   last[r.id] = r.t;
   if (r.count === null && r.speed === null && r.occ === null) continue;
+  if (Date.now() - r.t > 30 * 60_000) continue; // κολλημένος σταθμός, παλιά μέτρηση
   const day = new Date(r.t).toISOString().slice(0, 10);
   if (!byDay.has(day)) byDay.set(day, []);
   byDay.get(day).push(`${new Date(r.t).toISOString().slice(0, 19)}Z,${r.id},${r.count ?? ''},${r.occ ?? ''},${r.speed ?? ''}`);
