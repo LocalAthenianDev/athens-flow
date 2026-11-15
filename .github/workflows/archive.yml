@@ -1,14 +1,15 @@
 name: Αρχείο μετρήσεων
 
 # Το API της Περιφέρειας δίνει μόνο την τελευταία μέτρηση κάθε σταθμού.
-# Αυτή η ροή την αποθηκεύει κάθε λίγα λεπτά στον κλάδο `data`, ώστε να υπάρχει ανοιχτό ιστορικό.
+# Το ιστορικό το γράφει ο ίδιος ο server στον κλάδο `data` (lib/archiver.js).
+# Αυτή η ροή είναι εφεδρεία: μία φορά την ώρα γράφει ό,τι δεν έχει γραφτεί, αν ο server είναι κάτω.
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '23 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['scripts/archive.mjs', 'lib/clean.js', 'lib/profiles.js', '.github/workflows/archive.yml']
+    paths: ['scripts/archive.mjs', 'lib/clean.js', 'lib/profiles.js', 'lib/archiver.js', '.github/workflows/archive.yml']
 
 permissions:
   contents: write
@@ -41,4 +42,4 @@ jobs:
           git config user.email "athens-flow-bot@users.noreply.github.com"
           git add -A
           git diff --cached --quiet || git commit -qm "Μετρήσεις $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push origin HEAD:data
+          git push origin HEAD:data || echo "Ο κλάδος άλλαξε στο μεταξύ (έγραψε ο server). Τίποτα δεν χάθηκε."

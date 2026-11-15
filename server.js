@@ -3,12 +3,24 @@ import compression from 'compression';
 import { fetchSnapshot } from './lib/clean.js';
 import { state, ingest, addReading, setProfiles, compute } from './lib/store.js';
 import { fetchProfiles, fetchStations, fetchDay } from './lib/archive.js';
+import { createArchiver } from './lib/archiver.js';
 
 const PORT = process.env.PORT || 3000;
 const REFRESH_SEC = Number(process.env.REFRESH_SEC || 60);
 const PROFILES_MIN = Number(process.env.PROFILES_MIN || 15);
 const MOCK = process.env.MOCK === '1'; // χωρίς πρόσβαση στο API: δουλεύει μόνο με το αρχείο
 const APP_ENV = process.env.APP_ENV || 'production';
+const ARCHIVE_PUSH_MIN = Number(process.env.ARCHIVE_PUSH_MIN || 10);
+
+// Με GITHUB_TOKEN ο server γράφει ο ίδιος το ιστορικό στον κλάδο `data`. Το token μένει μόνο στο περιβάλλον.
+const archiver = process.env.GITHUB_TOKEN && !MOCK
+  ? createArchiver({
+    token: process.env.GITHUB_TOKEN,
+    repo: process.env.ARCHIVE_REPO || 'LocalAthenianDev/athens-flow',
+    branch: process.env.ARCHIVE_BRANCH || 'data',
+    api: process.env.GITHUB_API || undefined,
+  })
+  : null;
 
 const cache = { data: null, at: 0, etag: null, loading: null, lastError: null, profilesAt: 0 };
 
@@ -41,7 +53,7 @@ async function seed() {
 async function load() {
   if (!MOCK) {
     const snap = await fetchSnapshot(cache.etag);
-    if (!snap.unchanged) { cache.etag = snap.etag; ingest(snap.rows); }
+    if (!snap.unchanged) { cache.etag = snap.etag; ingest(snap.rows); archiver?.collect(snap.rows); }
   }
   if (Date.now() - cache.profilesAt > PROFILES_MIN * 60_000) await loadProfiles();
   cache.data = compute(MOCK ? state.newest : Date.now());
@@ -89,7 +101,10 @@ app.get('/api/stations/:id', (req, res) => send(res, (d) => {
   const s = d.stationDetail(req.params.id);
   return s ? res.json(s) : res.status(404).json({ error: 'Άγνωστος σταθμός' });
 }));
-app.get('/healthz', (req, res) => res.json({ ok: true, cached: Boolean(cache.data), latest: cache.data?.meta.latest ?? null }));
+app.get('/healthz', (req, res) => res.json({
+  ok: true, cached: Boolean(cache.data), latest: cache.data?.meta.latest ?? null,
+  archive: archiver ? archiver.status() : { enabled: false },
+}));
 
 app.listen(PORT, async () => {
   console.log(`Athens Flow στο http://localhost:${PORT}${MOCK ? ' (MOCK)' : ''}`);
@@ -97,4 +112,16 @@ app.listen(PORT, async () => {
   await seed();
   refresh().catch(() => {});
   setInterval(() => refresh().catch(() => {}), REFRESH_SEC * 1000).unref();
+  if (archiver) {
+    console.log(`[αρχείο] αποθήκευση στον κλάδο data κάθε ${ARCHIVE_PUSH_MIN} λεπτά`);
+    setInterval(() => archiver.flush(), ARCHIVE_PUSH_MIN * 60_000).unref();
+  }
 });
+
+// Σε επανεκκίνηση (π.χ. νέο deploy) γράφουμε πρώτα ό,τι περιμένει στη μνήμη
+if (archiver) {
+  process.once('SIGTERM', async () => {
+    await Promise.race([archiver.flush(true), new Promise((r) => setTimeout(r, 8000))]);
+    process.exit(0);
+  });
+}
