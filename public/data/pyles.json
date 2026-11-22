@@ -1,0 +1,15 @@
+[
+  { "key": "kifisias", "road": "Λ. ΚΗΦΙΣΙΑΣ", "place": "Ψυχικό", "in": "MS263", "out": "MS268" },
+  { "key": "mesogeion", "road": "Λ. ΜΕΣΟΓΕΙΩΝ", "place": "Χολαργός", "in": "MS452", "out": "MS451" },
+  { "key": "katechaki", "road": "Λ. ΚΑΤΕΧΑΚΗ", "place": "Γουδή", "in": "MS813", "out": "MS916" },
+  { "key": "vouliagmenis", "road": "Λ. ΒΟΥΛΙΑΓΜΕΝΗΣ", "place": "Ηλιούπολη", "in": "MS848", "out": "MS847" },
+  { "key": "ilioupoleos", "road": "Λ. ΗΛΙΟΥΠΟΛΕΩΣ", "place": "Δάφνη", "in": "MS836", "out": null },
+  { "key": "syggrou", "road": "Λ. ΣΥΓΓΡΟΥ", "place": "Καλλιθέα", "in": "MS206", "out": "MS193" },
+  { "key": "peiraios", "road": "ΠΕΙΡΑΙΩΣ", "place": "Ταύρος", "in": "MS712", "out": null },
+  { "key": "petrou-ralli", "road": "ΠΕΤΡΟΥ ΡΑΛΛΗ", "place": "Αιγάλεω, Νίκαια", "in": "MS946", "out": "MS948" },
+  { "key": "iera-odos", "road": "ΙΕΡΑ ΟΔΟΣ", "place": "Αιγάλεω", "in": "MS984", "out": "MS655" },
+  { "key": "athinon", "road": "Λ. ΑΘΗΝΩΝ", "place": "Περιστέρι, Αιγάλεω", "in": "MS639", "out": "MS638" },
+  { "key": "konstantinoupoleos", "road": "ΚΩΝΣΤΑΝΤΙΝΟΥΠΟΛΕΩΣ", "place": "Περιστέρι", "in": "MS970", "out": null },
+  { "key": "lenorman", "road": "ΛΕΝΟΡΜΑΝ", "place": "Περιστέρι", "in": "MS989", "out": "MS986" },
+  { "key": "acharnon", "road": "ΑΧΑΡΝΩΝ", "place": "Νέα Χαλκηδόνα", "in": "MS597", "out": "MS556" }
+]

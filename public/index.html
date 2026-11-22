@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="vendor/commissioner/600.css">
   <link rel="stylesheet" href="vendor/commissioner/700.css">
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <div id="envbar" class="envbar" hidden>Δοκιμαστική έκδοση</div>
@@ -41,11 +41,14 @@
           <button data-v="out" aria-pressed="false">Από Αθήνα</button>
           <button data-v="cross" aria-pressed="false">Εγκάρσιες</button>
         </div>
+        <button class="mapchip" id="gatechip" hidden>Είσοδοι του Δήμου <span aria-hidden="true">✕</span></button>
       </div>
       <div class="legend" id="legend"></div>
     </section>
     <section class="panel" id="panel" aria-live="polite"></section>
   </main>
+
+  <section class="gates" id="gates" aria-labelledby="gates-h" hidden></section>
 
   <main id="view-when" class="when" hidden></main>
 
@@ -74,6 +77,6 @@
 
   <div id="tip" class="tip" hidden></div>
   <script src="vendor/leaflet/leaflet.js"></script>
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

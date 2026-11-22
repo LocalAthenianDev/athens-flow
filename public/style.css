@@ -228,6 +228,58 @@ h2.h small { font-weight: 400; color: var(--muted); font-size: 13px; }
 .leaflet-tooltip.sttip { background: var(--ink); color: var(--wall); border: 0; border-radius: 8px; padding: 7px 10px; font-size: 12.5px; line-height: 1.4; box-shadow: 0 6px 20px rgba(0,0,0,.25); white-space: normal; width: max-content; max-width: 250px; }
 .leaflet-tooltip.sttip::before { display: none; }
 
+/* ---------- Πόσοι μπαίνουν στην Αθήνα ---------- */
+.gates { max-width: 1600px; margin: 0 auto; padding: 10px 24px 36px; }
+.gates-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px 28px; flex-wrap: wrap; margin-bottom: 16px; }
+.gates-head h2 { font-size: clamp(25px, 2.7vw, 34px); line-height: 1.1; font-weight: 700; letter-spacing: -.015em; }
+.gates-head .sub { font-size: 15.5px; max-width: 74ch; margin-top: 8px; }
+.beta { display: inline-block; font-size: 12.5px; font-weight: 600; color: #8a4b0f; background: #fdf0dc; border: 1px solid #f2d3a6; border-radius: 999px; padding: 2px 10px; margin-bottom: 10px; }
+@media (prefers-color-scheme: dark) { .beta { color: #f5c98d; background: #3a2a14; border-color: #5b4220; } }
+.pill { border: 1px solid var(--rule); background: var(--wall-2); color: var(--sign); font-weight: 600; font-size: 14px; padding: 8px 15px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.pill:hover { border-color: var(--sign); }
+.pill[aria-pressed="true"] { background: var(--sign); color: var(--sign-ink); border-color: var(--sign); }
+@media (prefers-color-scheme: dark) { .pill { color: #8fb4ea; } .pill[aria-pressed="true"] { color: #fff; } }
+.gstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.gtile { background: var(--wall-2); border: 1px solid var(--rule); border-top: 4px solid var(--sign); border-radius: var(--radius); padding: 13px 16px 14px; display: flex; flex-direction: column; gap: 2px; }
+.gtile.out { border-top-color: #c4532d; }
+@media (prefers-color-scheme: dark) { .gtile { border-top-color: #7fb0f0; } .gtile.out { border-top-color: #f0946e; } }
+.glabel { font-size: 13.5px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.gnum { font-size: clamp(27px, 2.7vw, 36px); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; margin-top: 6px; }
+.gunit { font-size: 13px; color: var(--muted); }
+.gcmp { font-size: 13.5px; font-weight: 600; margin-top: 8px; }
+.gcmp.up::before { content: '▲ '; font-size: 10px; vertical-align: 1px; }
+.gcmp.down::before { content: '▼ '; font-size: 10px; vertical-align: 1px; }
+.gcmp.none { font-weight: 400; color: var(--muted); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.in { background: var(--sign); } .dot.out { background: #c4532d; }
+@media (prefers-color-scheme: dark) { .dot.in { background: #7fb0f0; } .dot.out { background: #f0946e; } }
+.gcard + .gcard { margin-top: 16px; }
+.rows2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 36px; }
+.vchart .ln-typ { stroke-dasharray: 5 4; stroke-width: 1.5; opacity: .55; }
+.vchart .hz { fill: transparent; }
+.vchart .hz:hover { fill: var(--ink); fill-opacity: .05; }
+.vchart .nowln { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 3; }
+.vchart .nowtx { fill: var(--ink); font-weight: 600; }
+.key i.typ { height: 0; border-top: 2px dashed; border-radius: 0; background: none !important; opacity: .75; }
+.key i.k-in.typ { border-color: var(--sign); } .key i.k-out.typ { border-color: #c4532d; }
+@media (prefers-color-scheme: dark) { .key i.k-in.typ { border-color: #7fb0f0; } .key i.k-out.typ { border-color: #f0946e; } }
+.grow { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.3fr); }
+.gbars { display: grid; gap: 5px; }
+.gbar { display: grid; grid-template-columns: minmax(0, 1fr) 60px; align-items: center; gap: 8px; font-size: 12.5px; }
+.gbar .track { display: block; height: 9px; border-radius: 3px; background: var(--soft); overflow: hidden; }
+.gbar i { display: block; height: 100%; border-radius: 3px; }
+.gbar .b-in { background: var(--sign); } .gbar .b-out { background: #c4532d; }
+@media (prefers-color-scheme: dark) { .gbar .b-in { background: #7fb0f0; } .gbar .b-out { background: #f0946e; } }
+.gbar b { text-align: right; font-weight: 600; }
+.gbar.none span { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.gnote { max-width: 110ch; margin-top: 14px; line-height: 1.55; }
+.plate.sm { font-size: 11px; padding: 1px 6px 0; border-radius: 4px; }
+.mapchip {
+  border: 0; cursor: pointer; background: var(--sign); color: var(--sign-ink); font-weight: 600; font-size: 14px;
+  padding: 7px 13px; border-radius: 999px;
+}
+.st.gate svg { filter: drop-shadow(0 0 1.6px var(--ink)); }
+
 /* ---------- Πότε να φύγω ---------- */
 .when { max-width: 1040px; margin: 0 auto; padding: 14px 24px 40px; display: grid; gap: 22px; }
 .when h1 { font-size: clamp(28px, 4.2vw, 44px); line-height: 1.08; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
@@ -275,6 +327,9 @@ h2.h small { font-weight: 400; color: var(--muted); font-size: 13px; }
 .skeleton { color: var(--muted); padding: 24px 4px; }
 
 @media (max-width: 1080px) {
+  .rows2 { grid-template-columns: 1fr; }
+  .rows2 > .rows + .rows .rowbtn:first-child { border-top: 1px solid var(--rule); }
+  .gstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .layout { grid-template-columns: 1fr; height: auto; min-height: 0; }
   .mapwrap { height: 58vh; min-height: 360px; }
   .panel { overflow: visible; }
@@ -284,7 +339,9 @@ h2.h small { font-weight: 400; color: var(--muted); font-size: 13px; }
   .top { padding: 12px 14px 10px; gap: 10px; }
   .views a { padding: 7px 10px; font-size: 15px; }
   .status { order: 3; }
-  .layout, .when { padding-left: 14px; padding-right: 14px; }
+  .layout, .when, .gates { padding-left: 14px; padding-right: 14px; }
+  .gtile { padding: 11px 12px 12px; }
+  .grow { grid-template-columns: 1fr; gap: 8px; }
   .mapbar { left: 12px; top: 12px; }
   .leaflet-control-zoom { display: none; }
   .seg button { padding: 6px 10px; font-size: 13px; }

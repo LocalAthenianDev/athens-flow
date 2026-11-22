@@ -91,7 +91,7 @@ const send = (res, fn) => getData()
 
 app.get('/api/live', (req, res) => send(res, (d) => res.json({
   meta: { ...d.meta, env: APP_ENV, mock: MOCK, updated: new Date(cache.at).toISOString(), lastError: cache.lastError },
-  summary: d.summary, corridors: d.corridors, communities: d.communities, stations: d.stations,
+  summary: d.summary, corridors: d.corridors, communities: d.communities, gates: d.gates, stations: d.stations,
 })));
 app.get('/api/corridors/:key', (req, res) => send(res, (d) => {
   const c = d.corridorDetail[req.params.key];

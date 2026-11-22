@@ -23,7 +23,10 @@
     data: null, koin: [], view: 'flow', sel: { type: 'overview' }, dir: 'all',
     when: { key: null, dir: 'in', day: null, all: false },
     detail: new Map(), map: null, markers: new Map(), polys: new Map(),
+    gatesMap: false,
   };
+  // Η ενότητα «Πόσοι μπαίνουν στην Αθήνα» είναι ακόμη δοκιμαστική: φαίνεται μόνο με ?pyles στη διεύθυνση
+  const GATES = new URLSearchParams(location.search).has('pyles');
 
   // ---------- tooltip ----------
   const tipEl = $('#tip');
@@ -161,13 +164,16 @@
   // Ποιοι σταθμοί τονίζονται, ανάλογα με το φίλτρο κατεύθυνσης και την επιλογή
   function dimMarkers() {
     const { sel } = S;
+    const gates = S.gatesMap ? gateIds() : null;
     for (const s of S.data.stations) {
       const m = S.markers.get(s.id); if (!m) continue;
       let on = S.dir === 'all' || s.dir === S.dir;
       if (sel.type === 'corridor') on = on && s.road === sel.road;
       if (sel.type === 'community') on = on && s.community === sel.id;
+      if (gates) on = on && gates.has(s.id);
       const e = m.getElement(); if (!e) continue;
       e.classList.toggle('dim', !on);
+      e.classList.toggle('gate', Boolean(gates?.has(s.id)));
       e.classList.toggle('sel', sel.type === 'station' && sel.id === s.id);
     }
     for (const [id, p] of S.polys) p.setStyle({ weight: sel.type === 'community' && sel.id === id ? 3 : 1.6, fillOpacity: sel.type === 'community' && sel.id === id ? 0.12 : 0.05 });
@@ -344,13 +350,20 @@
     S.view = v;
     $('#view-flow').hidden = v !== 'flow';
     $('#view-when').hidden = v !== 'when';
+    $('#gates').hidden = !(GATES && v === 'flow' && S.data?.gates);
     document.querySelectorAll('.views a').forEach((a) => (a.dataset.view === v ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     if (v === 'flow') setTimeout(() => S.map.invalidateSize(), 0);
   }
 
   document.addEventListener('click', (e) => {
+    const gm = e.target.closest('[data-gates-map], #gatechip');
+    if (gm) { tip(null); return toggleGatesMap(gm.id === 'gatechip' ? false : !S.gatesMap); }
     const g = e.target.closest('[data-go]');
-    if (g) { tip(null); return go(g.dataset.go === 'community' ? { type: 'community', id: Number(g.dataset.id) } : { type: g.dataset.go, id: g.dataset.id }); }
+    if (g) {
+      tip(null);
+      if (g.closest('#gates')) window.scrollTo({ top: 0, behavior: 'smooth' });
+      return go(g.dataset.go === 'community' ? { type: 'community', id: Number(g.dataset.id) } : { type: g.dataset.go, id: g.dataset.id });
+    }
     const w = e.target.closest('[data-when]');
     if (w) { S.when.key = w.dataset.when; openWhen(); window.scrollTo({ top: 0 }); return; }
     const v = e.target.closest('.views a');
@@ -358,8 +371,9 @@
   });
   document.addEventListener('mouseover', (e) => {
     const h = e.target.closest?.('[data-hot]'); if (!h) return;
-    S.markers.get(h.dataset.hot)?.getElement()?.classList.add('sel');
-    h.addEventListener('mouseleave', () => { if (!(S.sel.type === 'station' && S.sel.id === h.dataset.hot)) S.markers.get(h.dataset.hot)?.getElement()?.classList.remove('sel'); }, { once: true });
+    const ids = h.dataset.hot.split(' ');
+    ids.forEach((id) => S.markers.get(id)?.getElement()?.classList.add('sel'));
+    h.addEventListener('mouseleave', () => ids.forEach((id) => { if (!(S.sel.type === 'station' && S.sel.id === id)) S.markers.get(id)?.getElement()?.classList.remove('sel'); }), { once: true });
   });
   $('#dirfilter').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -367,6 +381,119 @@
     $('#dirfilter').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     dimMarkers();
   });
+
+  // ---------- Πόσοι μπαίνουν στην Αθήνα (πύλες του Δήμου) ----------
+  const gateIds = () => new Set((S.data?.gates?.gates || []).flatMap((g) => [g.in?.id, g.out?.id]).filter(Boolean));
+  const num = (x) => (x === null || x === undefined ? '–' : nf.format(x));
+  function cmpTxt(vs, when) {
+    if (vs === null || vs === undefined) return '<span class="gcmp none">Δεν υπάρχει ακόμη ιστορικό για σύγκριση</span>';
+    if (Math.abs(vs) < 3) return `<span class="gcmp">Όσο συνήθως ${when}</span>`;
+    return `<span class="gcmp ${vs > 0 ? 'up' : 'down'}">${Math.abs(vs)}% ${vs > 0 ? 'περισσότερα' : 'λιγότερα'} από ό,τι συνήθως ${when}</span>`;
+  }
+
+  // Γράφημα ημέρας: οχήματα ανά ώρα, σήμερα (συνεχής γραμμή) και συνήθως (διακεκομμένη)
+  function volChart(series, { nowAt, width = 900 } = {}) {
+    const vals = series.flatMap((s) => s.values).filter((v) => v !== null);
+    if (vals.length < 2) return '<p class="note">Η καμπύλη γεμίζει όσο περνάει η ημέρα.</p>';
+    // Το πλάτος του σχεδίου ίσο με το πραγματικό, ώστε τα γράμματα να έχουν πάντα το ίδιο μέγεθος
+    const W = Math.round(Math.max(320, width)), H = W < 600 ? 200 : 236, L = 50, R = 14, T = 18, B = 26;
+    const every = W < 600 ? 6 : 3;
+    const step = 5000;
+    const max = Math.max(step, Math.ceil(Math.max(...vals) / step) * step);
+    const x = (h) => L + (h / 24) * (W - L - R);
+    const y = (v) => T + (1 - v / max) * (H - T - B);
+    let g = '';
+    for (const v of [0, max / 2, max]) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${nf.format(v)}</text>`;
+    for (let h = 0; h <= 24; h += every) g += `<text x="${x(h)}" y="${H - 7}" text-anchor="${h === 0 ? 'start' : h === 24 ? 'end' : 'middle'}">${hh(h)}</text>`;
+    for (const s of series) {
+      let d = '', pen = false;
+      s.values.forEach((v, h) => { if (v === null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${x(h + 0.5).toFixed(1)} ${y(v).toFixed(1)}`; pen = true; });
+      if (d) g += `<path class="ln ${s.cls}${s.typ ? ' ln-typ' : ''}" d="${d}"/>`;
+    }
+    if (nowAt !== undefined) g += `<line class="nowln" x1="${x(nowAt)}" x2="${x(nowAt)}" y1="${T - 6}" y2="${H - B}"/><text class="nowtx" x="${x(nowAt) + (nowAt > 20 ? -4 : 4)}" y="${T - 4}" text-anchor="${nowAt > 20 ? 'end' : 'start'}">τώρα</text>`;
+    for (let h = 0; h < 24; h++) {
+      const rows = series.filter((s) => !s.typ).map((s) => {
+        const v = s.values[h], t = series.find((z) => z.typ && z.dir === s.dir)?.values[h] ?? null;
+        return v === null && t === null ? null : `${s.name} ${v !== null ? num(v) : 'χωρίς μέτρηση'}${t !== null ? `, συνήθως ${num(t)}` : ''}`;
+      }).filter(Boolean);
+      if (rows.length) g += `<rect class="hz" x="${x(h).toFixed(1)}" y="${T}" width="${(x(h + 1) - x(h)).toFixed(1)}" height="${H - T - B}" data-tip="${esc(`<b>${hh(h)} έως ${hh(h + 1)}</b><br>${rows.join('<br>')}<br><span style="opacity:.7">οχήματα ανά ώρα</span>`)}"/>`;
+    }
+    return `<svg class="chart vchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Οχήματα ανά ώρα που μπαίνουν και βγαίνουν από τον Δήμο Αθηναίων σήμερα, και πόσα συνήθως">${g}</svg>`;
+  }
+
+  function renderGates() {
+    const root = $('#gates'), G = S.data?.gates;
+    if (!GATES || !G) { root.hidden = true; return; }
+    root.hidden = S.view !== 'flow';
+    const I = G.in, O = G.out;
+    const at = `${String(G.hour).padStart(2, '0')}:${String(G.minute).padStart(2, '0')}`;
+    const tile = (k, label, value, unit, cmp) => `<div class="gtile ${k}"><span class="glabel"><i class="dot ${k}"></i>${label}</span><b class="gnum num">${num(value)}</b><span class="gunit">${unit}</span>${cmp}</div>`;
+    const rows = [...G.gates].sort((a, b) => (b.in?.today ?? 0) - (a.in?.today ?? 0));
+    const top = Math.max(1, ...rows.flatMap((g) => [g.in?.today ?? 0, g.out?.today ?? 0]));
+    const bar = (x, k) => (x
+      ? `<div class="gbar"><span class="track"><i class="b-${k}" style="width:${Math.max(1.5, (100 * (x.today ?? 0)) / top).toFixed(1)}%"></i></span><b class="num">${num(x.today)}</b></div>`
+      : '<div class="gbar none"><span>χωρίς σταθμό προς αυτή την κατεύθυνση</span></div>');
+    const line = (x, verb, past) => (x ? `${verb} τώρα ${x.online ? `${num(x.now)} την ώρα` : 'χωρίς μέτρηση'}${x.typicalNow !== null ? ` (συνήθως ${num(x.typicalNow)})` : ''}<br>${past} σήμερα ${num(x.today)}` : '');
+    const list = rows.map((g) => {
+      const ids = [g.in?.id, g.out?.id].filter(Boolean);
+      const t = `<b>${esc(g.road)}</b>, ${esc(g.place)}<br>${[line(g.in, 'Μπαίνουν', 'Μπήκαν'), line(g.out, 'Βγαίνουν', 'Βγήκαν')].filter(Boolean).join('<br>')}<br><span style="opacity:.7">Σταθμοί ${ids.join(', ')}</span>`;
+      return `<button class="rowbtn grow" data-go="station" data-id="${ids[0]}" data-hot="${ids.join(' ')}" data-tip="${esc(t)}"><div><span class="plate">${esc(g.road)}</span><div class="rowmeta">${esc(g.place)}</div></div><div class="gbars">${bar(g.in, 'in')}${bar(g.out, 'out')}</div></button>`;
+    });
+    const oneWay = G.gates.filter((g) => !g.out).map((g) => `<span class="plate sm">${esc(g.road)}</span>`);
+    const joinEl = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} και ${a[a.length - 1]}` : a[0]);
+    const inner = Math.min(1600, root.clientWidth || 1000) - (innerWidth <= 600 ? 28 : 48) - 38;
+    const chart = volChart([
+      { name: 'Προς Αθήνα', dir: 'in', cls: 'ln-in', typ: true, values: I.typicalHours },
+      { name: 'Από Αθήνα', dir: 'out', cls: 'ln-out', typ: true, values: O.typicalHours },
+      { name: 'Προς Αθήνα', dir: 'in', cls: 'ln-in', values: I.hours },
+      { name: 'Από Αθήνα', dir: 'out', cls: 'ln-out', values: O.hours },
+    ], { nowAt: G.hour + G.minute / 60, width: inner });
+    S.gatesWidth = root.clientWidth;
+    const half = Math.ceil(list.length / 2);
+    root.innerHTML = `
+      <div class="gates-head">
+        <div>
+          <p class="beta">Δοκιμαστική ενότητα, τη βλέπεις μόνο από αυτόν τον σύνδεσμο</p>
+          <h2 id="gates-h">Πόσοι μπαίνουν στην Αθήνα</h2>
+          <p class="sub">Οχήματα που περνούν σήμερα από τις ${G.gates.length} κύριες εισόδους του Δήμου Αθηναίων, μετρημένα σε σταθμούς της Περιφέρειας κοντά στα όριά του.</p>
+        </div>
+        <button class="pill" data-gates-map aria-pressed="${S.gatesMap}">${S.gatesMap ? 'Όλοι οι σταθμοί στον χάρτη' : 'Δες τις εισόδους στον χάρτη'}</button>
+      </div>
+      <div class="gstats">
+        ${tile('in', 'Μπαίνουν τώρα', I.now, 'οχήματα την ώρα', cmpTxt(I.vsNow, 'τέτοια ώρα'))}
+        ${tile('out', 'Βγαίνουν τώρα', O.now, 'οχήματα την ώρα', cmpTxt(O.vsNow, 'τέτοια ώρα'))}
+        ${tile('in', 'Μπήκαν σήμερα', I.today, `οχήματα από τα μεσάνυχτα ως τις ${at}`, cmpTxt(I.vsToday, 'ως αυτή την ώρα'))}
+        ${tile('out', 'Βγήκαν σήμερα', O.today, `οχήματα από τα μεσάνυχτα ως τις ${at}`, cmpTxt(O.vsToday, 'ως αυτή την ώρα'))}
+      </div>
+      <div class="card gcard">
+        <h2 class="h">Σήμερα, ώρα με την ώρα <small>οχήματα ανά ώρα</small></h2>
+        ${chart}
+        <div class="key"><span><i class="k-in"></i>Προς Αθήνα</span><span><i class="k-in typ"></i>συνήθως</span><span><i class="k-out"></i>Από Αθήνα</span><span><i class="k-out typ"></i>συνήθως</span></div>
+      </div>
+      <div class="card gcard">
+        <h2 class="h">Οι είσοδοι <small>οχήματα σήμερα</small></h2>
+        <div class="key" style="margin:-4px 0 6px"><span><i class="k-in"></i>μπήκαν</span><span><i class="k-out"></i>βγήκαν</span></div>
+        <div class="rows2"><div class="rows">${list.slice(0, half).join('')}</div><div class="rows">${list.slice(half).join('')}</div></div>
+      </div>
+      <p class="note gnote">Κάθε είσοδος είναι ένας δρόμος που περνά το όριο του Δήμου, με έναν σταθμό μέτρησης ανά κατεύθυνση κοντά στο όριο. Οι σταθμοί δίνουν ροή σε οχήματα ανά ώρα, οπότε τα οχήματα της ημέρας βγαίνουν από τη ροή κάθε δεκαλέπτου. Όπου λείπει μέτρηση μπαίνει η συνηθισμένη τιμή της ίδιας ώρας, και το «συνηθισμένο» βγαίνει από την ίδια ημέρα των προηγούμενων εβδομάδων. Μένουν έξω οι μικρότεροι δρόμοι χωρίς σταθμό και η Κηφισού, που τρέχει δίπλα στο όριο και η κίνησή της πηγαίνει κυρίως προς Πειραιά, οπότε τα νούμερα είναι ένδειξη και όχι πλήρης καταμέτρηση.${oneWay.length ? ` ${oneWay.length === 1 ? 'Στην είσοδο' : 'Στις εισόδους'} ${joinEl(oneWay)} υπάρχει σταθμός μόνο προς την Αθήνα, γι' αυτό οι έξοδοι μετρούν λιγότερους δρόμους.` : ''}</p>`;
+  }
+
+  let resizeT;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => { if (GATES && S.view === 'flow' && Math.abs(($('#gates').clientWidth || 0) - (S.gatesWidth || 0)) > 40) renderGates(); }, 200);
+  });
+
+  function toggleGatesMap(on) {
+    S.gatesMap = on;
+    $('#gatechip').hidden = !on;
+    dimMarkers();
+    renderGates();
+    if (!on) return;
+    const pts = [...gateIds()].map((id) => S.data.stations.find((s) => s.id === id)).filter((s) => s?.lat).map((s) => [s.lat, s.lon]);
+    if (pts.length) S.map.fitBounds(pts, { padding: [50, 50], maxZoom: 14 });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   // ---------- Πότε να φύγω ----------
   // Από το τυπικό προφίλ μιας ημέρας βρίσκει τις ώρες αιχμής (πρωί, απόγευμα) και προτείνει πότε να ξεκινήσεις.
@@ -499,6 +626,7 @@
       S.data = await res.json();
       status();
       drawStations();
+      if (GATES) renderGates();
       if (first) route(); else if (S.view === 'flow') renderPanel(); else if (!document.activeElement?.closest?.('#view-when')) openWhen();
     } catch (e) {
       const st = $('#status'); st.classList.add('err');
